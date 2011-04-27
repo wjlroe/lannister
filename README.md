@@ -1,6 +1,6 @@
 # Lannister
 
-Lannister is a static website generator.
+Lannister is a static website generator. It is a work in progress.
 
 ## Features:
 
@@ -13,7 +13,7 @@ Lannister is a static website generator.
 
 Sorry. This is Go code, so it's not simple or straightforward to distrubute code. At least, I've not heard of any easy way.
 
-* Install Go, if you haven't already. It involves setting some stupid environment variables unlike any other language, which is lame, but what can you do? -> http://golang.org/doc/install.html
+* Install Go, if you haven't already. It involves setting some stupid environment variables unlike any other language, which is lame, but what can you do? -> [http://golang.org/doc/install.html](http://golang.org/doc/install.html)
 * Then run `goinstall github.com/wjlroe/lannister`
 * Or (probably more sensible), clone this repository and type `make`
 * You now have a binary, called lannister, that you can copy or link somewhere in your $PATH. I'd recommend ~/bin but that's just me.
@@ -21,7 +21,7 @@ Sorry. This is Go code, so it's not simple or straightforward to distrubute code
 
 ## Tutorial
 
-This tutorial is aimed at exactly what I wrote this tool for. I wanted a static site, with content loaded using the awesome PJAX jQuery plugin (https://github.com/defunkt/jquery-pjax). PJAX requires, like any AJAX-based tech, that the content requested is returned without the entire page. This means, if you want to serve up /about.html both as a static file (fully templated) and as a page fragment (for PJAX), you need different layouts/formats/whatever. This, in a nutshell, is the problem Lannister has arrived to solve.
+This tutorial is aimed at exactly what I wrote this tool for. I wanted a static site, with content loaded using the awesome PJAX jQuery plugin [https://github.com/defunkt/jquery-pjax](https://github.com/defunkt/jquery-pjax). PJAX requires, like any AJAX-based tech, that the content requested is returned without the entire page. This means, if you want to serve up /about.html both as a static file (fully templated) and as a page fragment (for PJAX), you need different layouts/formats/whatever. This, in a nutshell, is the problem Lannister has arrived to solve.
 
 So let's get on with creating a website. It's pretty exciting doing this, every single time and this time is no exception.
 
@@ -31,5 +31,40 @@ See what I did there? Dropbox is cool, you have to admit. Anyway, whether or not
 
 In the new directory that was created, we have the following:
 
- /newsite/
-   -
+    /newsite/
+    |-> site.db
+    |-> layouts/
+        |-> default.html
+        |-> default-pjax.html
+        |-> default.rss
+    |-> pages/
+        |-> about.md
+        |-> index.md
+    |-> images/
+        |-> loading.gif
+    |-> stylesheets/
+        |-> style.scss
+    |-> javascript/
+        |-> jquery-1.5.2.min.js
+        |-> jquery-ui.min.js
+        |-> jquery.pjax.js
+        |-> newsite.coffee
+    |-> site/
+
+OK, that seems reasonable. You will notice from the above that the conventions for using Lannister are using CoffeeScript for website-specific javascript, SASS/SCSS for CSS and Markdown for the content.
+
+So now let's generate the site:
+
+ > ./lannister generate
+
+That will spit the entire site in the site/ sub-directory.
+
+So what does it do? Well, this bootstrapped site provides a really simple site that shows how you can use PJAX to make cool websites with static content. Put it behind Varnish to cache things and speed up your site even more (saving you some hosting costs when you write that super amazing article - or rant - and get slashdotted).
+
+## Alternatives
+
+Yeah, alternatives. Makes it sound like this is the default. Yeah so you *could* use one of those other wacky systems, but you don't want to do that. Still, there *are* other systems out there. No doubt you've heard of at least two of these.
+
+* Jekyl. github use this for pages and blogs. I use it for my blog. Yeah. I use it. What an admission.
+* Hyde. As soon as somebody created a project called 'Jekyl', somebody just *had* to create one called 'Hyde'. Full marks there!
+* Bloxsom. Oh yeah! You remember that thing, the one in Perl, right? Yeah. Still exists. Doesn't really do much useful to me. Very blog-focused. Baroque.
