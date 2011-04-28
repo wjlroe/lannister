@@ -2,3 +2,6 @@
 #*#
 *.swp
 lannister
+*.1
+*.man
+*.6

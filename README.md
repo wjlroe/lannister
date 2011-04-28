@@ -65,6 +65,24 @@ So what does it do? Well, this bootstrapped site provides a really simple site t
 
 Yeah, alternatives. Makes it sound like this is the default. Yeah so you *could* use one of those other wacky systems, but you don't want to do that. Still, there *are* other systems out there. No doubt you've heard of at least two of these.
 
-* Jekyl. github use this for pages and blogs. I use it for my blog. Yeah. I use it. What an admission.
-* Hyde. As soon as somebody created a project called 'Jekyl', somebody just *had* to create one called 'Hyde'. Full marks there!
-* Bloxsom. Oh yeah! You remember that thing, the one in Perl, right? Yeah. Still exists. Doesn't really do much useful to me. Very blog-focused. Baroque.
+* [Jekyl](https://github.com/mojombo/jekyll). github use this for pages and blogs. I use it for my blog. Yeah. I use it. What an admission.
+* [Hyde](http://ringce.com/hyde). As soon as somebody created a project called 'Jekyl', somebody just *had* to create one called 'Hyde'. Full marks there!
+* [Bloxsom](http://www.blosxom.com/). Oh yeah! You remember that thing, the one in Perl, right? Yeah. Still exists. Doesn't really do much useful to me. Very blog-focused. Baroque.
+* [Hakyll](http://jaspervdj.be/hakyll/index.html) in Haskell
+* [utternson](https://github.com/pepijndevos/utterson) in Clojure
+* [blatter](http://bitbucket.org/jek/blatter/)
+* [lanyon](http://bitbucket.org/arthurk/lanyon/)
+* [Webby](http://webby.rubyforge.org/)
+* [poole](https://bitbucket.org/obensonne/poole/src)
+* [toto](http://cloudhead.io/toto)
+* [chisel](https://github.com/dz/chisel)
+* [tahchee](http://ivy.fr/tahchee/)
+* [middleman](https://github.com/tdreyno/middleman)
+* [frank](https://github.com/blahed/frank)
+* [bricolage](http://bricolagecms.org/)
+* [nanoc](http://nanoc.stoneship.org/)
+* [webgen](http://webgen.rubyforge.org/)
+* [StaticMatic](http://staticmatic.rubyforge.org/)
+* [static](http://static.newqdev.com/)
+* [Ensemble](https://launchpad.net/ensemble) I have no idea what this is
+
