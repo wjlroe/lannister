@@ -7,14 +7,78 @@ import (
 	"io"
 //	"bufio"
 	"fmt"
+	"path"
+	"http"
 	"path/filepath"
 	"bytes"
 	"template"
 	"strings"
 )
 
+// TODO: Add extra URIs in case of failure
+//http://code.jquery.com/jquery-1.5.2.min.js
+// TODO: Make generic func url -> location downloader
+
+var static_files = map[string] string {
+	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" : "javascript",
+	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" : "javascript",
+	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js" : "javascript",
+}
+
 type Page struct {
 	PageContent string
+}
+
+func download(url string, location string) {
+	filename := path.Base(url)
+	fullname := path.Join(location, filename)
+	os.MkdirAll(location, 0755)
+	//fmt.Printf("Fullname: %s\n", fullname)
+	encoded := fmt.Sprintf("%s", url)
+	///fmt.Println(encoded)
+	r, _, err := http.Get(encoded)
+	const NBUF = 512
+	var buf [NBUF]byte
+	//os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	fd, oerr := os.OpenFile(fullname, os.O_WRONLY|os.O_CREATE, 0644)
+	if oerr != nil {
+		fmt.Printf("Opening file: %s failed with error: %s\n", fullname, oerr.String())
+		os.Exit(1)
+	}
+	defer fd.Close()
+	if err == nil {
+		defer r.Body.Close()
+		for {
+			nr, ferr := r.Body.Read(buf[0:])
+			if ferr != nil {
+				if ferr == os.EOF {
+					//fmt.Println("EOF")
+					break
+				} else {
+					fmt.Printf("Error: %s  downloading uri: %s\n", ferr.String(), encoded)
+					os.Exit(1)
+				}
+			}
+			nw, ew := fd.Write(buf[0:nr])
+			if ew != nil {
+				fmt.Printf("Error writing to file. Error: %s\n", ew.String())
+				os.Exit(1)
+			}
+			if nw != nr {
+				fmt.Printf("Error writing %d bytes from Download!\n", nr)
+				os.Exit(1)
+			}
+		}
+		//fmt.Printf("Finished reading/writing file\n")
+
+	} else {
+		fmt.Printf("Error reading from body: %s\n", err.String())
+		//log.Stderr(err)
+		os.Exit(1)
+	}
+	//fmt.Println("Written. Closing...")
+
+	//fmt.Println("Closed")
 }
 
 func is_dir(name string) bool {
@@ -46,11 +110,35 @@ func markdown_parse(file_in io.Reader) *markdown.Doc {
 	return doc
 }
 
-func createsite(site_dir string) {
-	// Create the basic layout for a site
-	//abs_path := absolute(site_dir)
-	//os.Mkdir(abd_path, 0776)
+func write_file(content string, filepath string) {
+	out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err.String())
+		os.Exit(1)
+	}
+	defer out_fd.Close()
+	out_fd.WriteString(content)
+}
 
+func createsite(site_dir string) {
+	os.MkdirAll(filepath.Join(site_dir, "pages"), 0755)
+	os.MkdirAll(filepath.Join(site_dir, "layouts"), 0755)
+	for uri, path := range static_files {
+		local_path := filepath.Join(site_dir, path)
+		fmt.Printf("Downloading URI: %s to path: %s\n", uri, local_path)
+		download(uri, local_path)
+	}
+	appjs_path := filepath.Join(site_dir, "javascript", "app.js")
+	write_file(appjs, appjs_path)
+	index_path := filepath.Join(site_dir, "pages", "index.md")
+	write_file(index_page, index_path)
+	about_path := filepath.Join(site_dir, "pages", "about.md")
+	write_file(about_page, about_path)
+	default_path := filepath.Join(site_dir, "layouts", "default.html")
+	write_file(layout_default, default_path)
+	pjax_path := filepath.Join(site_dir, "layouts", "default-pjax.html")
+	write_file(layout_pjax, pjax_path)
+	// TODO: default.rss ?
 }
 
 func generate() os.Error {
@@ -141,3 +229,63 @@ func main() {
 		fmt.Println("no command specified!")
 	}
 }
+
+const appjs = `
+$(document).ready(function() {
+		      $('nav ul li a').pjax('#main', {
+						beforeSend: function(xhr){
+						    xhr.setRequestHeader('X-PJAX', 'true');
+						    this.url = this.url.replace("^/$", "/index-pjax.html");
+						    this.url = this.url.replace(".html", "-pjax.html");
+						}
+					    });
+
+		      $('#main')
+			  .bind('start.pjax', function() {
+				    console.log("start pjax");
+				    $('#main').hide("slide", {direction: "left"}, 1000);
+				    $('#loading').show();
+				})
+			  .bind('pjax', function() {
+				console.log("pjax fired");
+				})
+			  .bind('end.pjax', function() {
+				    $('#loading').hide();
+				    $('#main').show("slide", {direction: "right"}, 1000);
+				});
+		  });
+`
+
+const about_page = `
+<article>
+## About
+This is the about page.
+</article>
+`
+
+const index_page = `
+<article>
+## Index
+This is the index page.
+</article>
+`
+
+const layout_pjax = `
+{PageContent}
+`
+
+const layout_default = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1>Site title</h1>
+    NAV GOES HERE
+    <div id="main">
+      {PageContent}
+    </div>
+  </body>
+</html>
+`
