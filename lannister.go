@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"template"
 	"strings"
+	"log"
 )
 
 // TODO: Add extra URIs in case of failure
@@ -143,11 +144,50 @@ func createsite(site_dir string) {
 	// TODO: default.rss ?
 }
 
+func CopyFile(dst, src string) (int64, os.Error) {
+        sf, err := os.Open(src)
+        if err != nil {
+                return 0, err
+        }
+        defer sf.Close()
+        df, err := os.Create(dst)
+        if err != nil {
+                return 0, err
+        }
+        defer df.Close()
+        return io.Copy(df, sf)
+}
+
+func copy_dir_contents(src_dir string) {
+	dst_dir := filepath.Join("site", src_dir)
+	src_fd, err := os.Open(src_dir)
+	if err != nil {
+		log.Fatal("Could not open dir: %s", src_dir)
+	}
+	files, err := src_fd.Readdirnames(-1)
+	if err != nil {
+		log.Fatal("Could not read directory names: %s", err.String())
+	}
+	for _,filename := range files {
+		dst_file := filepath.Join(dst_dir, filename)
+		src_file := filepath.Join(src_dir, filename)
+		_, err := CopyFile(dst_file, src_file)
+		if err != nil {
+			log.Fatal("Error: %s writing to %s!", err.String(), dst_file)
+		}
+	}
+}
+
 func generate() os.Error {
 	// list the files to be templated
 	// process them - markdown
 	// run each through each layout file (TODO: make configurable)
 	// save each output file in the site directory
+	os.MkdirAll(filepath.Join("site", "images"), 0755)
+	os.MkdirAll(filepath.Join("site", "javascript"), 0755)
+	copy_dir_contents("images")
+	copy_dir_contents("javascript")
+
 	var page_files []string
 	var err os.Error
 	page_files, err = filepath.Glob("./pages/*.md")
@@ -223,6 +263,8 @@ func main() {
 		case "generate":
 			check_cwd()
 			generate()
+		case "serve":
+			Serve()
 		default:
 			fmt.Printf("Command: %s not understood.\n", command)
 		}

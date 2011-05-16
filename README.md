@@ -59,6 +59,12 @@ That will spit the entire site in the site/ sub-directory.
 
 So what does it do? Well, this bootstrapped site provides a really simple site that shows how you can use PJAX to make cool websites with static content. Put it behind Varnish to cache things and speed up your site even more (saving you some hosting costs when you write that super amazing article - or rant - and get slashdotted).
 
+Now if you want to test the site in your browser, run:
+
+   ./lannister serve
+
+This will serve the content of your site on [localhost:6565](http://localhost:6565) - check it out!
+
 ## Alternatives
 
 Yeah, alternatives. Makes it sound like this is the default. Yeah so you *could* use one of those other wacky systems, but you don't want to do that. Still, there *are* other systems out there. No doubt you've heard of at least two of these.
