@@ -32,26 +32,24 @@ See what I did there? Dropbox is cool, you have to admit. Anyway, whether or not
 In the new directory that was created, we have the following:
 
     /newsite/
-    |-> site.db
     |-> layouts/
         |-> default.html
         |-> default-pjax.html
-        |-> default.rss
     |-> pages/
         |-> about.md
         |-> index.md
     |-> images/
         |-> loading.gif
     |-> stylesheets/
-        |-> style.scss
+        |-> style.css
     |-> javascript/
-        |-> jquery-1.5.2.min.js
+        |-> jquery.min.js
         |-> jquery-ui.min.js
         |-> jquery.pjax.js
-        |-> newsite.coffee
+        |-> app.js
     |-> site/
 
-OK, that seems reasonable. You will notice from the above that the conventions for using Lannister are using CoffeeScript for website-specific javascript, SASS/SCSS for CSS and Markdown for the content.
+OK, that seems reasonable. You will notice from the above that the conventions for using Lannister are for using Markdown for the content.
 
 So now let's generate the site:
 

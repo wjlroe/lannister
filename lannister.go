@@ -23,6 +23,7 @@ var static_files = map[string] string {
 	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" : "javascript",
 	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" : "javascript",
 	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js" : "javascript",
+	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif" : "images",
 }
 
 type Page struct {
@@ -122,6 +123,7 @@ func write_file(content string, filepath string) {
 
 func createsite(site_dir string) {
 	os.MkdirAll(filepath.Join(site_dir, "pages"), 0755)
+	os.MkdirAll(filepath.Join(site_dir, "site"), 0755)
 	os.MkdirAll(filepath.Join(site_dir, "layouts"), 0755)
 	for uri, path := range static_files {
 		local_path := filepath.Join(site_dir, path)
@@ -160,11 +162,10 @@ func generate() os.Error {
 		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err.String())
 		return err
 	}
-	var fmap = template.FormatterMap{
+	var fmap = template.FormatterMap {
 		"" : template.StringFormatter,
 		"html": template.HTMLFormatter,
 	}
-	//templates := make([]template.Template, len(template_files))
 	templates := map[string] *template.Template{}
 	for _,t := range template_files {
 		templates[filepath.Base(t)] = template.MustParseFile(t, fmap)
