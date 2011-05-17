@@ -229,6 +229,7 @@ func generate() os.Error {
 		fmt.Printf("Page ext: %s\n", page_ext)
 		page_filename = strings.Replace(page_filename, page_ext, "", -1)
 		for tpl_filename, template := range templates {
+			// TODO: This should be pagename-pjax.html or pagename.html - BUG
 			filename := strings.Replace(tpl_filename, "filename", page_filename, -1)
 			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tpl_filename, page_filename, filename)
 			filepath := filepath.Join("site", filename)
