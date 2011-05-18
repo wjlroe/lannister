@@ -65,6 +65,12 @@ Now if you want to test the site in your browser, run:
 
 This will serve the content of your site on [localhost:6565](http://localhost:6565) - check it out!
 
+## Serving sites from a Dropbox folder:
+
+You will need another loopback address:
+
+   sudo ifconfig lo0 alias 127.0.0.2 up
+
 ## Alternatives
 
 Yeah, alternatives. Makes it sound like this is the default. Yeah so you *could* use one of those other wacky systems, but you don't want to do that. Still, there *are* other systems out there. No doubt you've heard of at least two of these.

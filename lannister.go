@@ -265,7 +265,15 @@ func main() {
 			check_cwd()
 			generate()
 		case "serve":
-			Serve()
+			if len(os.Args) > 2 {
+				if os.Args[2] == "dropbox" {
+					DropBoxServe()
+				} else {
+					fmt.Println("Don't understand what you want to serve!. Did you mean 'dropbox'?")
+				}
+			} else {
+				Serve("./")
+			}
 		default:
 			fmt.Printf("Command: %s not understood.\n", command)
 		}
