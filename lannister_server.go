@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"io"
 	"log"
+	"regexp"
+	"strings"
 )
 
 var content_types = map[string] string {
@@ -18,6 +20,8 @@ var content_types = map[string] string {
 	"css" : "text/css",
 	"html" : "text/html",
 }
+
+var href_regex = regexp.MustCompile("(href=\"/[^\"]*\")")
 
 func Serve(root string) {
 	// http.HandleFunc("/", FileRequest)
@@ -45,27 +49,49 @@ func DropBoxServe() {
 			fmt.Printf("Can't stat dir: %s\n", root)
 		}
 		if site_info.IsDirectory() {
-			site_prefix := "/" + sitename
-			fmt.Printf("Serving %s at http://localhost:6767/%s - site_prefix: %s\n", sitename, sitename, site_prefix)
-			http.Handle(site_prefix, http.FileServer(root, site_prefix))
+			site_prefix := "/" + sitename + "/"
+			server := &DropboxServer{location: root, site_prefix: sitename, dropbox_location: dropbox_root}
+			fmt.Printf("Serving %s at http://localhost:6767/%s/ - site_prefix: %s\n", sitename, sitename, site_prefix)
+			//http.Handle(site_prefix, http.FileServer(root, site_prefix))
+			http.Handle(site_prefix, server)
 			num_dirs++
 		}
 	}
 	if num_dirs > 0 {
 		fmt.Println("Listening on http://localhost:6767")
+		http.HandleFunc("/", LogRequest)
 		http.ListenAndServe(":6767", nil)
 	} else {
 		log.Fatal("No directories existed to serve")
 	}
 }
 
-func ServeFiles(
+type DropboxServer struct {
+	location string
+	site_prefix string
+	dropbox_location string
+}
 
-func FileRequest(w http.ResponseWriter, r *http.Request) {
+func (server *DropboxServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Attempting dropbox file")
 	filename := r.URL.Path
+	full_filename := server.dropbox_location + filename
+	fmt.Println("Filename requested: ", full_filename)
+	//fmt.Fprintf(w, "hi\n")
+	FileRequest(full_filename, w, r)
+}
+
+func LogRequest(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Path
+	fmt.Println("Default handler: ", filename)
+	fmt.Fprintf(w, "hi\n")
+}
+
+func FileRequest(filename string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Filename requested: ", filename)
 	filename_stat, err := os.Stat(filename)
 	if err != nil {
+		fmt.Println("404 Not Found: ", filename)
 		http.Error(w, err.String(), http.StatusNotFound)
 		return
 	}
@@ -82,6 +108,11 @@ func FileRequest(w http.ResponseWriter, r *http.Request) {
 	defer fd.Close()
 
 	content_type := content_types[filepath.Ext(filename)]
+
+	if strings.Contains(content_type, "text") {
+
+	}
+
 	w.Header().Set("Content-Type", content_type)
 	w.Header().Set("Content-Length", strconv.Itoa64(filename_stat.Size))
 	io.Copy(w, fd)

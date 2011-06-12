@@ -38,10 +38,9 @@ func download(url string, location string) {
 	//fmt.Printf("Fullname: %s\n", fullname)
 	encoded := fmt.Sprintf("%s", url)
 	///fmt.Println(encoded)
-	r, _, err := http.Get(encoded)
+	r, err := http.Get(encoded)
 	const NBUF = 512
 	var buf [NBUF]byte
-	//os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	fd, oerr := os.OpenFile(fullname, os.O_WRONLY|os.O_CREATE, 0644)
 	if oerr != nil {
 		fmt.Printf("Opening file: %s failed with error: %s\n", fullname, oerr.String())
@@ -230,7 +229,7 @@ func generate() os.Error {
 		page_filename = strings.Replace(page_filename, page_ext, "", -1)
 		for tpl_filename, template := range templates {
 			// TODO: This should be pagename-pjax.html or pagename.html - BUG
-			filename := strings.Replace(tpl_filename, "filename", page_filename, -1)
+			filename := strings.Replace(tpl_filename, "default", page_filename, -1)
 			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tpl_filename, page_filename, filename)
 			filepath := filepath.Join("site", filename)
 			fmt.Printf("Going to save templated page: %s as file: %s\n", page_filename, filepath)
@@ -284,7 +283,7 @@ func main() {
 
 const appjs = `
 $(document).ready(function() {
-		      $('nav ul li a').pjax('#main', {
+		      $('nav a').pjax('#main', {
 						beforeSend: function(xhr){
 						    xhr.setRequestHeader('X-PJAX', 'true');
 						    this.url = this.url.replace("^/$", "/index-pjax.html");
@@ -308,19 +307,17 @@ $(document).ready(function() {
 		  });
 `
 
-const about_page = `
-<article>
+const about_page = `<article>
 ## About
 This is the about page.
-</article>
-`
 
-const index_page = `
-<article>
+</article>`
+
+const index_page = `<article>
 ## Index
 This is the index page.
-</article>
-`
+
+</article>`
 
 const layout_pjax = `
 {PageContent}
@@ -331,10 +328,22 @@ const layout_default = `
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script src="/javascript/jquery.min.js"></script>
+    <script src="/javascript/jquery-ui.min.js"></script>
+    <script src="/javascript/jquery.pjax.js"></script>
+    <script src="/javascript/app.js"></script>
   </head>
   <body>
-    <h1>Site title</h1>
-    NAV GOES HERE
+    <header>
+      <h1>Site title</h1>
+      <nav>
+        <a href="/index.html">Home</a>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+    <div id="loading" style="display:none">
+      <img src="/images/loading.gif" />
+    </div>
     <div id="main">
       {PageContent}
     </div>
