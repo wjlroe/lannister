@@ -53,7 +53,7 @@ OK, that seems reasonable. You will notice from the above that the conventions f
 
 So now let's generate the site:
 
-   ./lannister generate
+    ./lannister generate
 
 That will spit the entire site in the site/ sub-directory.
 
@@ -61,7 +61,7 @@ So what does it do? Well, this bootstrapped site provides a really simple site t
 
 Now if you want to test the site in your browser, run:
 
-   ./lannister serve
+    ./lannister serve
 
 This will serve the content of your site on [localhost:6565](http://localhost:6565) - check it out!
 
@@ -69,7 +69,7 @@ This will serve the content of your site on [localhost:6565](http://localhost:65
 
 You will need another loopback address:
 
-   sudo ifconfig lo0 alias 127.0.0.2 up
+    sudo ifconfig lo0 alias 127.0.0.2 up
 
 ## Alternatives
 
