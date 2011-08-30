@@ -25,7 +25,7 @@ This tutorial is aimed at exactly what I wrote this tool for. I wanted a static 
 
 So let's get on with creating a website. It's pretty exciting doing this, every single time and this time is no exception.
 
-   ./lannister createsite ~/Dropbox/Sites/newsite
+    ./lannister createsite ~/Dropbox/Sites/newsite
 
 See what I did there? Dropbox is cool, you have to admit. Anyway, whether or not you're cool with syncing your new website on every computer you own (seriously, who wouldn't want that?), let's examine what we have got.
 
