@@ -7,7 +7,7 @@ docs:
 	@godoc -html > docs/lannister.html
 
 build: vet
-	go build -v -o bin/lannister ./src/lannister.go
+	go build -v -o bin/lannister ./src/*.go
 
 vet:
 	go vet ./src/...
