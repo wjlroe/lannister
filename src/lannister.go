@@ -327,7 +327,7 @@ This is the index page.
 </article>`
 
 const layout_pjax = `
-{PageContent}
+{{.PageContent}}
 `
 
 const layout_default = `
@@ -352,7 +352,7 @@ const layout_default = `
       <img src="/images/loading.gif" />
     </div>
     <div id="main">
-      {PageContent}
+      {{.PageContent}}
     </div>
   </body>
 </html>
