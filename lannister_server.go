@@ -1,7 +1,7 @@
 package main
 
 import (
-	"http"
+	"net/http"
 	"fmt"
 	"os"
 	"strconv"
@@ -24,9 +24,10 @@ var content_types = map[string] string {
 var href_regex = regexp.MustCompile("(href=\"/[^\"]*\")")
 
 func Serve(root string) {
-	// http.HandleFunc("/", FileRequest)
-	http.Handle("/", http.FileServer(root, "/"))
-	http.ListenAndServe(":6565", nil)
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(root))))
+	if err := http.ListenAndServe(":6565", nil); err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func DropBoxServe() {
@@ -48,7 +49,7 @@ func DropBoxServe() {
 		if err != nil {
 			fmt.Printf("Can't stat dir: %s\n", root)
 		}
-		if site_info.IsDirectory() {
+		if site_info.IsDir() {
 			site_prefix := "/" + sitename + "/"
 			server := &DropboxServer{location: root, site_prefix: sitename, dropbox_location: dropbox_root}
 			fmt.Printf("Serving %s at http://localhost:6767/%s/ - site_prefix: %s\n", sitename, sitename, site_prefix)
@@ -92,17 +93,17 @@ func FileRequest(filename string, w http.ResponseWriter, r *http.Request) {
 	filename_stat, err := os.Stat(filename)
 	if err != nil {
 		fmt.Println("404 Not Found: ", filename)
-		http.Error(w, err.String(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	if filename_stat.IsDirectory() {
+	if filename_stat.IsDir() {
 		return
 	}
 
 	fd, err := os.Open(filename)
 	if err != nil {
-		http.Error(w, err.String(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer fd.Close()
@@ -114,6 +115,6 @@ func FileRequest(filename string, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", content_type)
-	w.Header().Set("Content-Length", strconv.Itoa64(filename_stat.Size))
+	w.Header().Set("Content-Length", strconv.FormatInt(filename_stat.Size(), 10))
 	io.Copy(w, fd)
 }

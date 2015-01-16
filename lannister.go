@@ -1,17 +1,15 @@
 package main
 
 import (
-	 markdown "github.com/knieriem/markdown"
+	"github.com/russross/blackfriday"
 	"os"
 	"io/ioutil"
 	"io"
-//	"bufio"
 	"fmt"
 	"path"
-	"http"
+	"net/http"
 	"path/filepath"
-	"bytes"
-	"template"
+	htmpl "html/template"
 	"strings"
 	"log"
 )
@@ -43,7 +41,7 @@ func download(url string, location string) {
 	var buf [NBUF]byte
 	fd, oerr := os.OpenFile(fullname, os.O_WRONLY|os.O_CREATE, 0644)
 	if oerr != nil {
-		fmt.Printf("Opening file: %s failed with error: %s\n", fullname, oerr.String())
+		fmt.Printf("Opening file: %s failed with error: %s\n", fullname, oerr.Error())
 		os.Exit(1)
 	}
 	defer fd.Close()
@@ -52,17 +50,17 @@ func download(url string, location string) {
 		for {
 			nr, ferr := r.Body.Read(buf[0:])
 			if ferr != nil {
-				if ferr == os.EOF {
+				if ferr == io.EOF {
 					//fmt.Println("EOF")
 					break
 				} else {
-					fmt.Printf("Error: %s  downloading uri: %s\n", ferr.String(), encoded)
+					fmt.Printf("Error: %s  downloading uri: %s\n", ferr, encoded)
 					os.Exit(1)
 				}
 			}
 			nw, ew := fd.Write(buf[0:nr])
 			if ew != nil {
-				fmt.Printf("Error writing to file. Error: %s\n", ew.String())
+				fmt.Printf("Error writing to file. Error: %s\n", ew)
 				os.Exit(1)
 			}
 			if nw != nr {
@@ -73,7 +71,7 @@ func download(url string, location string) {
 		//fmt.Printf("Finished reading/writing file\n")
 
 	} else {
-		fmt.Printf("Error reading from body: %s\n", err.String())
+		fmt.Printf("Error reading from body: %s\n", err)
 		//log.Stderr(err)
 		os.Exit(1)
 	}
@@ -87,7 +85,7 @@ func is_dir(name string) bool {
 	if err != nil {
 		return false
 	}
-	return info.IsDirectory()
+	return info.IsDir()
 }
 
 func check_cwd() {
@@ -100,21 +98,16 @@ func check_cwd() {
 }
 
 // TODO: Return the markdown doc so it can be used multiple times instead of parsing it again
-func markdown_parse(file_in io.Reader) *markdown.Doc {
+func markdown_parse(file_in io.Reader) []byte {
 	b, _ := ioutil.ReadAll(file_in)
 
-	doc := markdown.Parse(string(b), markdown.Extensions{Smart: true})
-
-	//w := bufio.NewWriter(file_out)
-	//doc.WriteHtml(w)
-	//w.Flush()
-	return doc
+	return blackfriday.MarkdownCommon(b)
 }
 
 func write_file(content string, filepath string) {
 	out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err.String())
+		fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err)
 		os.Exit(1)
 	}
 	defer out_fd.Close()
@@ -143,7 +136,7 @@ func createsite(site_dir string) {
 	// TODO: default.rss ?
 }
 
-func CopyFile(dst, src string) (int64, os.Error) {
+func CopyFile(dst, src string) (int64, error) {
         sf, err := os.Open(src)
         if err != nil {
                 return 0, err
@@ -165,19 +158,19 @@ func copy_dir_contents(src_dir string) {
 	}
 	files, err := src_fd.Readdirnames(-1)
 	if err != nil {
-		log.Fatal("Could not read directory names: %s", err.String())
+		log.Fatal("Could not read directory names: %s", err)
 	}
 	for _,filename := range files {
 		dst_file := filepath.Join(dst_dir, filename)
 		src_file := filepath.Join(src_dir, filename)
 		_, err := CopyFile(dst_file, src_file)
 		if err != nil {
-			log.Fatal("Error: %s writing to %s!", err.String(), dst_file)
+			log.Fatal("Error: %s writing to %s!", err, dst_file)
 		}
 	}
 }
 
-func generate() os.Error {
+func generate() error {
 	// list the files to be templated
 	// process them - markdown
 	// run each through each layout file (TODO: make configurable)
@@ -188,41 +181,37 @@ func generate() os.Error {
 	copy_dir_contents("javascript")
 
 	var page_files []string
-	var err os.Error
+	var err error
 	page_files, err = filepath.Glob("./pages/*.md")
 	if err != nil {
-		fmt.Printf("Failed to find any .md files in pages subdir. Error: %s\n", err.String())
+		fmt.Printf("Failed to find any .md files in pages subdir. Error: %s\n", err)
 		return err
 	}
 
 	var template_files []string
 	template_files, err = filepath.Glob("./layouts/*.html")
 	if err != nil {
-		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err.String())
+		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
 		return err
 	}
-	var fmap = template.FormatterMap {
-		"" : template.StringFormatter,
-		"html": template.HTMLFormatter,
-	}
-	templates := map[string] *template.Template{}
+	// var fmap = template.FormatterMap {
+	// 	"" : template.StringFormatter,
+	// 	"html": template.HTMLFormatter,
+	// }
+	templates := map[string] *htmpl.Template{}
 	for _,t := range template_files {
-		templates[filepath.Base(t)] = template.MustParseFile(t, fmap)
+		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
 	}
 
 	for _,page_filepath := range page_files {
 		in_fd, err := os.Open(page_filepath)
 		if err != nil {
-			fmt.Printf("Failed to open file: %s, error: %s\n", page_filepath, err.String())
+			fmt.Printf("Failed to open file: %s, error: %s\n", page_filepath, err)
 			return err
 		}
 		defer in_fd.Close()
 		doc := markdown_parse(in_fd)
-		buffer := bytes.NewBufferString("")
-		doc.WriteHtml(buffer)
-
-		page := &Page{PageContent: buffer.String()}
-
+		page := &Page{PageContent: string(doc)}
 		page_filename := filepath.Base(page_filepath)
 		page_ext := filepath.Ext(page_filename)
 		fmt.Printf("Page ext: %s\n", page_ext)
@@ -235,7 +224,7 @@ func generate() os.Error {
 			fmt.Printf("Going to save templated page: %s as file: %s\n", page_filename, filepath)
 			out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
-				fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err.String())
+				fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err)
 				return err
 			}
 			defer out_fd.Close()
