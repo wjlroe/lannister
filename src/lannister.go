@@ -26,7 +26,7 @@ var static_files = map[string] string {
 }
 
 type Page struct {
-	PageContent string
+	PageContent htmpl.HTML
 }
 
 func download(url string, location string) {
@@ -215,7 +215,7 @@ func generate(root string) error {
 		}
 		defer in_fd.Close()
 		doc := markdown_parse(in_fd)
-		page := &Page{PageContent: string(doc)}
+		page := &Page{PageContent: htmpl.HTML(doc)}
 		page_filename := filepath.Base(page_filepath)
 		page_ext := filepath.Ext(page_filename)
 		fmt.Printf("Page ext: %s\n", page_ext)
@@ -314,20 +314,16 @@ $(document).ready(function() {
 		  });
 `
 
-const about_page = `<article>
-## About
-This is the about page.
+const about_page = `## About
+This is the *about* page.
+`
 
-</article>`
-
-const index_page = `<article>
-## Index
+const index_page = `## Index
 This is the index page.
-
-</article>`
+`
 
 const layout_pjax = `
-{{.PageContent}}
+<article>{{.PageContent}}</article>
 `
 
 const layout_default = `
@@ -352,7 +348,9 @@ const layout_default = `
       <img src="/images/loading.gif" />
     </div>
     <div id="main">
-      {{.PageContent}}
+      <article>
+        {{.PageContent}}
+      </article>
     </div>
   </body>
 </html>
