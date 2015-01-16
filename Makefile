@@ -1,11 +1,25 @@
-include $(GOROOT)/src/Make.inc
+.PHONY: build doc fmt lint run test vet
 
-TARG=lannister
-GOFILES=lannister_server.go\
-	lannister.go\
-
-include $(GOROOT)/src/Make.cmd
+default: build
 
 docs:
 	@pandoc -s -w man -o lannister.1 README.md
 	@godoc -html > docs/lannister.html
+
+build: vet
+	go build -v -o bin/lannister ./src/lannister.go
+
+vet:
+	go vet ./src/...
+
+lint:
+	golint ./src
+
+fmt:
+	go fmt ./src/...
+
+test:
+	go test ./src/...
+
+run: build
+	./bin/lannister
