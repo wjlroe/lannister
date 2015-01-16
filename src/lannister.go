@@ -88,12 +88,15 @@ func is_dir(name string) bool {
 	return info.IsDir()
 }
 
-func check_cwd() {
-	if !is_dir("pages") || !is_dir("layouts") || !is_dir("site") {
-		fmt.Println("Current directory is not a Lannister site dir.")
-		fmt.Println("To be used, there should be ./pages/, ./layouts/, ./site/")
-		fmt.Println("Please use ./lannister createsite ./dir/to/create/as/site")
-		os.Exit(1)
+func checkDirectory(root string) {
+	dirs := []string{"pages","layouts","site"}
+	for _, dir := range dirs {
+		if !is_dir(filepath.Join(root, dir)) {
+			fmt.Println("Current directory is not a Lannister site dir.")
+			fmt.Println("To be used, there should be ./pages/, ./layouts/, ./site/")
+			fmt.Println("Please use ./lannister createsite ./dir/to/create/as/site")
+			os.Exit(1)
+		}
 	}
 }
 
@@ -150,9 +153,9 @@ func CopyFile(dst, src string) (int64, error) {
         return io.Copy(df, sf)
 }
 
-func copy_dir_contents(src_dir string) {
-	dst_dir := filepath.Join("site", src_dir)
-	src_fd, err := os.Open(src_dir)
+func copy_dir_contents(root, src_dir string) {
+	dst_dir := filepath.Join(root, "site", src_dir)
+	src_fd, err := os.Open(filepath.Join(root, src_dir))
 	if err != nil {
 		log.Fatalf("Could not open dir: %s", src_dir)
 	}
@@ -162,7 +165,8 @@ func copy_dir_contents(src_dir string) {
 	}
 	for _,filename := range files {
 		dst_file := filepath.Join(dst_dir, filename)
-		src_file := filepath.Join(src_dir, filename)
+		src_file := filepath.Join(root, src_dir, filename)
+		log.Printf("Copying %s to %s", src_file, dst_file)
 		_, err := CopyFile(dst_file, src_file)
 		if err != nil {
 			log.Fatalf("Error: %s writing to %s!", err, dst_file)
@@ -170,26 +174,26 @@ func copy_dir_contents(src_dir string) {
 	}
 }
 
-func generate() error {
+func generate(root string) error {
 	// list the files to be templated
 	// process them - markdown
 	// run each through each layout file (TODO: make configurable)
 	// save each output file in the site directory
-	os.MkdirAll(filepath.Join("site", "images"), 0755)
-	os.MkdirAll(filepath.Join("site", "javascript"), 0755)
-	copy_dir_contents("images")
-	copy_dir_contents("javascript")
+	os.MkdirAll(filepath.Join(root, "site", "images"), 0755)
+	os.MkdirAll(filepath.Join(root, "site", "javascript"), 0755)
+	copy_dir_contents(root, "images")
+	copy_dir_contents(root, "javascript")
 
 	var page_files []string
 	var err error
-	page_files, err = filepath.Glob("./pages/*.md")
+	page_files, err = filepath.Glob(filepath.Join(root, "pages", "*.md"))
 	if err != nil {
 		fmt.Printf("Failed to find any .md files in pages subdir. Error: %s\n", err)
 		return err
 	}
 
 	var template_files []string
-	template_files, err = filepath.Glob("./layouts/*.html")
+	template_files, err = filepath.Glob(filepath.Join(root, "layouts", "*.html"))
 	if err != nil {
 		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
 		return err
@@ -220,7 +224,7 @@ func generate() error {
 			// TODO: This should be pagename-pjax.html or pagename.html - BUG
 			filename := strings.Replace(tpl_filename, "default", page_filename, -1)
 			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tpl_filename, page_filename, filename)
-			filepath := filepath.Join("site", filename)
+			filepath := filepath.Join(root, "site", filename)
 			fmt.Printf("Going to save templated page: %s as file: %s\n", page_filename, filepath)
 			out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
@@ -233,6 +237,14 @@ func generate() error {
 		}
 	}
 	return nil
+}
+
+func GetCWD() (directory string) {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal("OMG can't work out the CWD")
+	}
+	return dir
 }
 
 func main() {
@@ -250,8 +262,14 @@ func main() {
 				fmt.Println("Please provide a directory to create the site in")
 			}
 		case "generate":
-			check_cwd()
-			generate()
+			directory := ""
+			if len(os.Args) > 2 {
+				directory = os.Args[2]
+			} else {
+				directory = GetCWD()
+			}
+			checkDirectory(directory)
+			generate(directory)
 		case "serve":
 			if len(os.Args) > 2 {
 				if os.Args[2] == "dropbox" {
