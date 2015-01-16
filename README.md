@@ -91,10 +91,9 @@ Yeah, alternatives. Makes it sound like this is the default. Yeah so you *could*
 * [frank](https://github.com/blahed/frank)
 * [bricolage](http://bricolagecms.org/)
 * [nanoc](http://nanoc.stoneship.org/)
-* [webgen](http://webgen.rubyforge.org/)
+* [webgen](http://webgen.gettalong.org/)
 * [StaticMatic](http://staticmatic.rubyforge.org/)
 * [static](http://static.newqdev.com/)
-* [Ensemble](https://launchpad.net/ensemble) I have no idea what this is
 
 ## License
 
