@@ -154,18 +154,18 @@ func copy_dir_contents(src_dir string) {
 	dst_dir := filepath.Join("site", src_dir)
 	src_fd, err := os.Open(src_dir)
 	if err != nil {
-		log.Fatal("Could not open dir: %s", src_dir)
+		log.Fatalf("Could not open dir: %s", src_dir)
 	}
 	files, err := src_fd.Readdirnames(-1)
 	if err != nil {
-		log.Fatal("Could not read directory names: %s", err)
+		log.Fatalf("Could not read directory names: %s", err)
 	}
 	for _,filename := range files {
 		dst_file := filepath.Join(dst_dir, filename)
 		src_file := filepath.Join(src_dir, filename)
 		_, err := CopyFile(dst_file, src_file)
 		if err != nil {
-			log.Fatal("Error: %s writing to %s!", err, dst_file)
+			log.Fatalf("Error: %s writing to %s!", err, dst_file)
 		}
 	}
 }
