@@ -21,14 +21,14 @@ import (
 //http://code.jquery.com/jquery-1.5.2.min.js
 // TODO: Make generic func url -> location downloader
 
-var static_files = map[string] string {
+var staticFiles = map[string] string {
 	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" : "javascript",
 	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" : "javascript",
 	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js" : "javascript",
 	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif" : "images",
 }
 
-type Page struct {
+type page struct {
 	PageContent htmpl.HTML
 }
 
@@ -83,7 +83,7 @@ func download(url string, location string) {
 	//fmt.Println("Closed")
 }
 
-func is_dir(name string) bool {
+func isDir(name string) bool {
 	info, err := os.Stat(name)
 	if err != nil {
 		return false
@@ -94,7 +94,7 @@ func is_dir(name string) bool {
 func checkDirectory(root string) {
 	dirs := []string{"pages","layouts","site"}
 	for _, dir := range dirs {
-		if !is_dir(filepath.Join(root, dir)) {
+		if !isDir(filepath.Join(root, dir)) {
 			fmt.Println("Current directory is not a Lannister site dir.")
 			fmt.Println("To be used, there should be ./pages/, ./layouts/, ./site/")
 			fmt.Println("Please use ./lannister createsite ./dir/to/create/as/site")
@@ -104,20 +104,20 @@ func checkDirectory(root string) {
 }
 
 // TODO: Return the markdown doc so it can be used multiple times instead of parsing it again
-func markdown_parse(file_in io.Reader) []byte {
-	b, _ := ioutil.ReadAll(file_in)
+func markdownParse(fileIn io.Reader) []byte {
+	b, _ := ioutil.ReadAll(fileIn)
 
 	return blackfriday.MarkdownCommon(b)
 }
 
-func write_file(content string, filepath string) {
-	out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+func writeFile(content string, filepath string) {
+	outFd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err)
 		os.Exit(1)
 	}
-	defer out_fd.Close()
-	out_fd.WriteString(content)
+	defer outFd.Close()
+	outFd.WriteString(content)
 }
 
 func createAtomFeed(filename string) {
@@ -134,32 +134,32 @@ func createAtomFeed(filename string) {
     fmt.Printf("Failed to marshal the feed: %s", err)
     os.Exit(1)
   }
-  write_file(string(data[:]), filename)
+  writeFile(string(data[:]), filename)
 }
 
-func createsite(site_dir string) {
-	os.MkdirAll(filepath.Join(site_dir, "pages"), 0755)
-	os.MkdirAll(filepath.Join(site_dir, "site"), 0755)
-	os.MkdirAll(filepath.Join(site_dir, "layouts"), 0755)
-	for uri, path := range static_files {
-		local_path := filepath.Join(site_dir, path)
-		fmt.Printf("Downloading URI: %s to path: %s\n", uri, local_path)
-		download(uri, local_path)
+func createsite(siteDir string) {
+	os.MkdirAll(filepath.Join(siteDir, "pages"), 0755)
+	os.MkdirAll(filepath.Join(siteDir, "site"), 0755)
+	os.MkdirAll(filepath.Join(siteDir, "layouts"), 0755)
+	for uri, path := range staticFiles {
+		localPath := filepath.Join(siteDir, path)
+		fmt.Printf("Downloading URI: %s to path: %s\n", uri, localPath)
+		download(uri, localPath)
 	}
-	appjs_path := filepath.Join(site_dir, "javascript", "app.js")
-	write_file(appjs, appjs_path)
-	index_path := filepath.Join(site_dir, "pages", "index.md")
-	write_file(index_page, index_path)
-	about_path := filepath.Join(site_dir, "pages", "about.md")
-	write_file(about_page, about_path)
-	default_path := filepath.Join(site_dir, "layouts", "default.html")
-	write_file(layout_default, default_path)
-	pjax_path := filepath.Join(site_dir, "layouts", "default-pjax.html")
-	write_file(layout_pjax, pjax_path)
+	appjsPath := filepath.Join(siteDir, "javascript", "app.js")
+	writeFile(appjs, appjsPath)
+	indexPath := filepath.Join(siteDir, "pages", "index.md")
+	writeFile(indexPage, indexPath)
+	aboutPath := filepath.Join(siteDir, "pages", "about.md")
+	writeFile(aboutPage, aboutPath)
+	defaultPath := filepath.Join(siteDir, "layouts", "default.html")
+	writeFile(layoutDefault, defaultPath)
+	pjaxPath := filepath.Join(siteDir, "layouts", "default-pjax.html")
+	writeFile(layoutPjax, pjaxPath)
 	// TODO: default.rss ?
 }
 
-func CopyFile(dst, src string) (int64, error) {
+func copyFile(dst, src string) (int64, error) {
         sf, err := os.Open(src)
         if err != nil {
                 return 0, err
@@ -173,23 +173,23 @@ func CopyFile(dst, src string) (int64, error) {
         return io.Copy(df, sf)
 }
 
-func copy_dir_contents(root, src_dir string) {
-	dst_dir := filepath.Join(root, "site", src_dir)
-	src_fd, err := os.Open(filepath.Join(root, src_dir))
+func copyDirContents(root, srcDir string) {
+	dstDir := filepath.Join(root, "site", srcDir)
+	srcFd, err := os.Open(filepath.Join(root, srcDir))
 	if err != nil {
-		log.Fatalf("Could not open dir: %s", src_dir)
+		log.Fatalf("Could not open dir: %s", srcDir)
 	}
-	files, err := src_fd.Readdirnames(-1)
+	files, err := srcFd.Readdirnames(-1)
 	if err != nil {
 		log.Fatalf("Could not read directory names: %s", err)
 	}
 	for _,filename := range files {
-		dst_file := filepath.Join(dst_dir, filename)
-		src_file := filepath.Join(root, src_dir, filename)
-		log.Printf("Copying %s to %s", src_file, dst_file)
-		_, err := CopyFile(dst_file, src_file)
+		dstFile := filepath.Join(dstDir, filename)
+		srcFile := filepath.Join(root, srcDir, filename)
+		log.Printf("Copying %s to %s", srcFile, dstFile)
+		_, err := copyFile(dstFile, srcFile)
 		if err != nil {
-			log.Fatalf("Error: %s writing to %s!", err, dst_file)
+			log.Fatalf("Error: %s writing to %s!", err, dstFile)
 		}
 	}
 }
@@ -201,19 +201,19 @@ func generate(root string) error {
 	// save each output file in the site directory
 	os.MkdirAll(filepath.Join(root, "site", "images"), 0755)
 	os.MkdirAll(filepath.Join(root, "site", "javascript"), 0755)
-	copy_dir_contents(root, "images")
-	copy_dir_contents(root, "javascript")
+	copyDirContents(root, "images")
+	copyDirContents(root, "javascript")
 
-	var page_files []string
+	var pageFiles []string
 	var err error
-	page_files, err = filepath.Glob(filepath.Join(root, "pages", "*.md"))
+	pageFiles, err = filepath.Glob(filepath.Join(root, "pages", "*.md"))
 	if err != nil {
 		fmt.Printf("Failed to find any .md files in pages subdir. Error: %s\n", err)
 		return err
 	}
 
-	var template_files []string
-	template_files, err = filepath.Glob(filepath.Join(root, "layouts", "*.html"))
+	var templateFiles []string
+	templateFiles, err = filepath.Glob(filepath.Join(root, "layouts", "*.html"))
 	if err != nil {
 		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
 		return err
@@ -223,44 +223,44 @@ func generate(root string) error {
 	// 	"html": template.HTMLFormatter,
 	// }
 	templates := map[string] *htmpl.Template{}
-	for _,t := range template_files {
+	for _,t := range templateFiles {
 		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
 	}
 
-	for _,page_filepath := range page_files {
-		in_fd, err := os.Open(page_filepath)
+	for _,pageFilepath := range pageFiles {
+		inFd, err := os.Open(pageFilepath)
 		if err != nil {
-			fmt.Printf("Failed to open file: %s, error: %s\n", page_filepath, err)
+			fmt.Printf("Failed to open file: %s, error: %s\n", pageFilepath, err)
 			return err
 		}
-		defer in_fd.Close()
-		doc := markdown_parse(in_fd)
-		page := &Page{PageContent: htmpl.HTML(doc)}
-		page_filename := filepath.Base(page_filepath)
-		page_ext := filepath.Ext(page_filename)
-		fmt.Printf("Page ext: %s\n", page_ext)
-		page_filename = strings.Replace(page_filename, page_ext, "", -1)
-		for tpl_filename, template := range templates {
+		defer inFd.Close()
+		doc := markdownParse(inFd)
+		page := &page{PageContent: htmpl.HTML(doc)}
+		pageFilename := filepath.Base(pageFilepath)
+		pageExt := filepath.Ext(pageFilename)
+		fmt.Printf("Page ext: %s\n", pageExt)
+		pageFilename = strings.Replace(pageFilename, pageExt, "", -1)
+		for tplFilename, template := range templates {
 			// TODO: This should be pagename-pjax.html or pagename.html - BUG
-			filename := strings.Replace(tpl_filename, "default", page_filename, -1)
-			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tpl_filename, page_filename, filename)
+			filename := strings.Replace(tplFilename, "default", pageFilename, -1)
+			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tplFilename, pageFilename, filename)
 			filepath := filepath.Join(root, "site", filename)
-			fmt.Printf("Going to save templated page: %s as file: %s\n", page_filename, filepath)
-			out_fd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+			fmt.Printf("Going to save templated page: %s as file: %s\n", pageFilename, filepath)
+			outFd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
 				fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err)
 				return err
 			}
-			defer out_fd.Close()
-			template.Execute(out_fd, page)
-			out_fd.Sync()
+			defer outFd.Close()
+			template.Execute(outFd, page)
+			outFd.Sync()
 		}
 	}
 	createAtomFeed(filepath.Join(root, "site", "index.rss"))
 	return nil
 }
 
-func GetCWD() (directory string) {
+func getCWD() (directory string) {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatal("OMG can't work out the CWD")
@@ -287,7 +287,7 @@ func main() {
 			if len(os.Args) > 2 {
 				directory = os.Args[2]
 			} else {
-				directory = GetCWD()
+				directory = getCWD()
 			}
 			checkDirectory(directory)
 			generate(directory)
@@ -335,19 +335,19 @@ $(document).ready(function() {
 		});
 `
 
-const about_page = `## About
+const aboutPage = `## About
 This is the *about* page.
 `
 
-const index_page = `## Index
+const indexPage = `## Index
 This is the index page.
 `
 
-const layout_pjax = `
+const layoutPjax = `
 <article>{{.PageContent}}</article>
 `
 
-const layout_default = `
+const layoutDefault = `
 <!DOCTYPE html>
 <html lang="en">
   <head>
