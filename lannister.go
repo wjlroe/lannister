@@ -1,6 +1,7 @@
 package main
 
 import (
+	"golang.org/x/tools/blog/atom"
 	"github.com/russross/blackfriday"
 	"os"
 	"io/ioutil"
@@ -12,6 +13,8 @@ import (
 	htmpl "html/template"
 	"strings"
 	"log"
+	"encoding/xml"
+	// "gopkg.in/yaml.v2"
 )
 
 // TODO: Add extra URIs in case of failure
@@ -115,6 +118,23 @@ func write_file(content string, filepath string) {
 	}
 	defer out_fd.Close()
 	out_fd.WriteString(content)
+}
+
+func createAtomFeed(filename string) {
+  feed := atom.Feed {
+    Title: "Will Roe's blog",
+  }
+  e := &atom.Entry {
+    Title: "a blog post",
+  }
+  feed.Entry = append(feed.Entry, e)
+
+  data, err := xml.Marshal(&feed)
+  if err != nil {
+    fmt.Printf("Failed to marshal the feed: %s", err)
+    os.Exit(1)
+  }
+  write_file(string(data[:]), filename)
 }
 
 func createsite(site_dir string) {
@@ -236,6 +256,7 @@ func generate(root string) error {
 			out_fd.Sync()
 		}
 	}
+	createAtomFeed(filepath.Join(root, "site", "index.rss"))
 	return nil
 }
 
@@ -290,28 +311,28 @@ func main() {
 
 const appjs = `
 $(document).ready(function() {
-		      $('nav a').pjax('#main', {
+			$('nav a').pjax('#main', {
 						beforeSend: function(xhr){
-						    xhr.setRequestHeader('X-PJAX', 'true');
-						    this.url = this.url.replace("^/$", "/index-pjax.html");
-						    this.url = this.url.replace(".html", "-pjax.html");
+						xhr.setRequestHeader('X-PJAX', 'true');
+						this.url = this.url.replace("^/$", "/index-pjax.html");
+						this.url = this.url.replace(".html", "-pjax.html");
 						}
-					    });
+					});
 
-		      $('#main')
-			  .bind('start.pjax', function() {
-				    console.log("start pjax");
-				    $('#main').hide("slide", {direction: "left"}, 1000);
-				    $('#loading').show();
+			$('#main')
+			.bind('start.pjax', function() {
+				console.log("start pjax");
+				$('#main').hide("slide", {direction: "left"}, 1000);
+				$('#loading').show();
 				})
-			  .bind('pjax', function() {
+			.bind('pjax', function() {
 				console.log("pjax fired");
 				})
-			  .bind('end.pjax', function() {
-				    $('#loading').hide();
-				    $('#main').show("slide", {direction: "right"}, 1000);
+			.bind('end.pjax', function() {
+				$('#loading').hide();
+				$('#main').show("slide", {direction: "right"}, 1000);
 				});
-		  });
+		});
 `
 
 const about_page = `## About
