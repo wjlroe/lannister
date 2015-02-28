@@ -1,19 +1,19 @@
 package main
 
 import (
-	"golang.org/x/tools/blog/atom"
-	"github.com/russross/blackfriday"
-	"os"
-	"io/ioutil"
-	"io"
-	"fmt"
-	"path"
-	"net/http"
-	"path/filepath"
-	htmpl "html/template"
-	"strings"
-	"log"
 	"encoding/xml"
+	"fmt"
+	"github.com/russross/blackfriday"
+	"golang.org/x/tools/blog/atom"
+	htmpl "html/template"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	// "gopkg.in/yaml.v2"
 )
 
@@ -21,11 +21,11 @@ import (
 //http://code.jquery.com/jquery-1.5.2.min.js
 // TODO: Make generic func url -> location downloader
 
-var staticFiles = map[string] string {
-	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" : "javascript",
-	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" : "javascript",
-	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js" : "javascript",
-	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif" : "images",
+var staticFiles = map[string]string{
+	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js":         "javascript",
+	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js":   "javascript",
+	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js":        "javascript",
+	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif": "images",
 }
 
 type page struct {
@@ -92,7 +92,7 @@ func isDir(name string) bool {
 }
 
 func checkDirectory(root string) {
-	dirs := []string{"pages","layouts","site"}
+	dirs := []string{"pages", "layouts", "site"}
 	for _, dir := range dirs {
 		if !isDir(filepath.Join(root, dir)) {
 			fmt.Println("Current directory is not a Lannister site dir.")
@@ -121,20 +121,20 @@ func writeFile(content string, filepath string) {
 }
 
 func createAtomFeed(filename string) {
-  feed := atom.Feed {
-    Title: "Will Roe's blog",
-  }
-  e := &atom.Entry {
-    Title: "a blog post",
-  }
-  feed.Entry = append(feed.Entry, e)
+	feed := atom.Feed{
+		Title: "Will Roe's blog",
+	}
+	e := &atom.Entry{
+		Title: "a blog post",
+	}
+	feed.Entry = append(feed.Entry, e)
 
-  data, err := xml.Marshal(&feed)
-  if err != nil {
-    fmt.Printf("Failed to marshal the feed: %s", err)
-    os.Exit(1)
-  }
-  writeFile(string(data[:]), filename)
+	data, err := xml.Marshal(&feed)
+	if err != nil {
+		fmt.Printf("Failed to marshal the feed: %s", err)
+		os.Exit(1)
+	}
+	writeFile(string(data[:]), filename)
 }
 
 func createsite(siteDir string) {
@@ -160,17 +160,17 @@ func createsite(siteDir string) {
 }
 
 func copyFile(dst, src string) (int64, error) {
-        sf, err := os.Open(src)
-        if err != nil {
-                return 0, err
-        }
-        defer sf.Close()
-        df, err := os.Create(dst)
-        if err != nil {
-                return 0, err
-        }
-        defer df.Close()
-        return io.Copy(df, sf)
+	sf, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer sf.Close()
+	df, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer df.Close()
+	return io.Copy(df, sf)
 }
 
 func copyDirContents(root, srcDir string) {
@@ -183,7 +183,7 @@ func copyDirContents(root, srcDir string) {
 	if err != nil {
 		log.Fatalf("Could not read directory names: %s", err)
 	}
-	for _,filename := range files {
+	for _, filename := range files {
 		dstFile := filepath.Join(dstDir, filename)
 		srcFile := filepath.Join(root, srcDir, filename)
 		log.Printf("Copying %s to %s", srcFile, dstFile)
@@ -222,12 +222,12 @@ func generate(root string) error {
 	// 	"" : template.StringFormatter,
 	// 	"html": template.HTMLFormatter,
 	// }
-	templates := map[string] *htmpl.Template{}
-	for _,t := range templateFiles {
+	templates := map[string]*htmpl.Template{}
+	for _, t := range templateFiles {
 		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
 	}
 
-	for _,pageFilepath := range pageFiles {
+	for _, pageFilepath := range pageFiles {
 		inFd, err := os.Open(pageFilepath)
 		if err != nil {
 			fmt.Printf("Failed to open file: %s, error: %s\n", pageFilepath, err)
