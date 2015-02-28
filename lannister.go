@@ -218,10 +218,6 @@ func generate(root string) error {
 		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
 		return err
 	}
-	// var fmap = template.FormatterMap {
-	// 	"" : template.StringFormatter,
-	// 	"html": template.HTMLFormatter,
-	// }
 	templates := map[string]*htmpl.Template{}
 	for _, t := range templateFiles {
 		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
