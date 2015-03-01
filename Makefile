@@ -1,4 +1,4 @@
-.PHONY: build doc fmt lint run test vet
+.PHONY: build doc fmt lint run test vet create generate serve
 
 default: build
 
@@ -7,19 +7,28 @@ docs:
 	@godoc -html > docs/lannister.html
 
 build: vet
-	go build -v -o bin/lannister ./src/*.go
+	go build -v
 
 vet:
-	go vet ./src/...
+	go vet
 
 lint:
-	golint ./src
+	golint
 
 fmt:
-	go fmt ./src/...
+	go fmt
 
 test:
-	go test ./src/...
+	go test
 
-run: build
-	./bin/lannister
+clean:
+	rm -rf testsite
+
+create: clean build
+	./lannister createsite testsite
+
+generate: create
+	./lannister generate testsite
+
+serve:
+	livereloadx -s -p 4366 testsite/site

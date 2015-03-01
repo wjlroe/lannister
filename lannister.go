@@ -23,13 +23,6 @@ import (
 //http://code.jquery.com/jquery-1.5.2.min.js
 // TODO: Make generic func url -> location downloader
 
-var staticFiles = map[string]string{
-	"http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js":         "javascript",
-	"http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js":   "javascript",
-	"https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js":        "javascript",
-	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif": "images",
-}
-
 type postMeta map[interface{}]interface{}
 
 // Post object
@@ -174,11 +167,8 @@ func createsite(siteDir string) {
 	os.MkdirAll(filepath.Join(siteDir, "site"), 0755)
 	os.MkdirAll(filepath.Join(siteDir, "layouts"), 0755)
 	os.MkdirAll(filepath.Join(siteDir, "posts"), 0755)
-	for uri, path := range staticFiles {
-		localPath := filepath.Join(siteDir, path)
-		fmt.Printf("Downloading URI: %s to path: %s\n", uri, localPath)
-		download(uri, localPath)
-	}
+	os.MkdirAll(filepath.Join(siteDir, "javascript"), 0755)
+	os.MkdirAll(filepath.Join(siteDir, "images"), 0755)
 	appjsPath := filepath.Join(siteDir, "javascript", "app.js")
 	writeFile(appjs, appjsPath)
 	indexPath := filepath.Join(siteDir, "pages", "index.md")
@@ -191,6 +181,8 @@ func createsite(siteDir string) {
 	writeFile(layoutPjax, pjaxPath)
 	examplePostPath := filepath.Join(siteDir, "posts", "2015-02-27-example-post.md")
 	writeFile(examplePost, examplePostPath)
+	exampleConfigPath := filepath.Join(siteDir, "config.yml")
+	writeFile(exampleConfig, exampleConfigPath)
 }
 
 func copyFile(dst, src string) (int64, error) {
@@ -474,10 +466,10 @@ const layoutDefault = `
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <script src="/javascript/jquery.min.js"></script>
-    <script src="/javascript/jquery-ui.min.js"></script>
-    <script src="/javascript/jquery.pjax.js"></script>
-    <script src="/javascript/app.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" type="text/javascript"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" type="text/javascript"></script>
+	<script src="https://github.com/defunkt/jquery-pjax/raw/master/jquery.pjax.js" type="text/javascript"></script>
+    <script src="/javascript/app.js" type="text/javascript"></script>
   </head>
   <body>
     <header>
@@ -488,7 +480,7 @@ const layoutDefault = `
       </nav>
     </header>
     <div id="loading" style="display:none">
-      <img src="/images/loading.gif" />
+      <img src="http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif">
     </div>
     <div id="main">
       <article>
@@ -497,4 +489,9 @@ const layoutDefault = `
     </div>
   </body>
 </html>
+`
+
+const exampleConfig = `---
+site_name: My awesome blog
+subtitle: Really great stuff
 `
