@@ -23,6 +23,7 @@ type postMeta map[interface{}]interface{}
 type Post struct {
 	Filename   string
 	SourcePath string
+	Title      string
 	Metadata   postMeta
 }
 
@@ -34,26 +35,32 @@ type destination interface {
 	DestPath() string
 }
 
-// DestPath returns the translated filepath as it should be available in the site
-func (p *Post) DestPath() (dest string, err error) {
-	var dateRe = regexp.MustCompile(`^[\d\-]*`)
-	const datePathFormat = "2006/01/02"
+// Date returns the publication date for a post
+func (p *Post) Date() (t time.Time, err error) {
 	const dateFormat = "2006-01-02 15:04"
-	filename := dateRe.ReplaceAllString(filepath.Base(p.Filename), "")
 	dateStr := p.Metadata["date"].(string)
-	var t time.Time
 	t, err = time.Parse(dateFormat, dateStr)
 	if err != nil {
 		fmt.Printf("Error parsing metadata date: %s. Error: %s\n", dateStr, err)
 		return
 	}
-	dest = filepath.Join(t.Format(datePathFormat), filename)
 	return
 }
 
+// DestPath returns the translated filepath as it should be available in the site
+func (p *Post) DestPath() (dest string, err error) {
+	const datePathFormat = "2006/01/02"
+	var dateRe = regexp.MustCompile(`^[\d\-]*`)
+	filename := dateRe.ReplaceAllString(filepath.Base(p.Filename), "")
 
+	var date time.Time
+	date, err = p.Date()
+	if err != nil {
+		return
 	}
+	dest = filepath.Join(date.Format(datePathFormat), filename)
 
+	return
 }
 
 func isDir(name string) bool {
@@ -93,21 +100,32 @@ func writeFile(content string, filepath string) {
 	outFd.WriteString(content)
 }
 
-func createAtomFeed(filename string) {
+func createAtomFeed(filename string, posts []*Post) (err error) {
 	feed := atom.Feed{
 		Title: "Will Roe's blog",
 	}
-	e := &atom.Entry{
-		Title: "a blog post",
+	for _, p := range posts {
+		var t time.Time
+		t, err = p.Date()
+		if err != nil {
+			fmt.Printf("Error getting date of post: %v\n", p)
+			break
+		}
+		e := &atom.Entry{
+			Title:     p.Title,
+			Published: atom.Time(t),
+		}
+		feed.Entry = append(feed.Entry, e)
 	}
-	feed.Entry = append(feed.Entry, e)
 
-	data, err := xml.Marshal(&feed)
+	var data []byte
+	data, err = xml.Marshal(&feed)
 	if err != nil {
 		fmt.Printf("Failed to marshal the feed: %s", err)
 		os.Exit(1)
 	}
 	writeFile(string(data[:]), filename)
+	return
 }
 
 func createsite(siteDir string) {
@@ -259,6 +277,7 @@ func postsMetadata(root string, postFiles []string) (posts []*Post, err error) {
 
 		p := new(Post)
 		p.Metadata = meta
+		p.Title = meta["title"].(string)
 		p.Filename = filepath.Base(postFilename)
 		p.SourcePath = postFilename
 		posts = append(posts, p)
@@ -302,7 +321,7 @@ func generate(root string) (err error) {
 		templatedPost(root, p)
 	}
 
-	createAtomFeed(filepath.Join(root, "site", "index.rss"))
+	createAtomFeed(filepath.Join(root, "site", "index.rss"), posts)
 	return nil
 }
 
