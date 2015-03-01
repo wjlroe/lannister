@@ -10,9 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -53,55 +51,9 @@ func (p *Post) DestPath() (dest string, err error) {
 	return
 }
 
-func download(url string, location string) {
-	filename := path.Base(url)
-	fullname := path.Join(location, filename)
-	os.MkdirAll(location, 0755)
-	//fmt.Printf("Fullname: %s\n", fullname)
-	encoded := fmt.Sprintf("%s", url)
-	///fmt.Println(encoded)
-	r, err := http.Get(encoded)
-	const NBUF = 512
-	var buf [NBUF]byte
-	fd, oerr := os.OpenFile(fullname, os.O_WRONLY|os.O_CREATE, 0644)
-	if oerr != nil {
-		fmt.Printf("Opening file: %s failed with error: %s\n", fullname, oerr.Error())
-		os.Exit(1)
-	}
-	defer fd.Close()
-	if err == nil {
-		defer r.Body.Close()
-		for {
-			nr, ferr := r.Body.Read(buf[0:])
-			if ferr != nil {
-				if ferr == io.EOF {
-					//fmt.Println("EOF")
-					break
-				} else {
-					fmt.Printf("Error: %s  downloading uri: %s\n", ferr, encoded)
-					os.Exit(1)
-				}
-			}
-			nw, ew := fd.Write(buf[0:nr])
-			if ew != nil {
-				fmt.Printf("Error writing to file. Error: %s\n", ew)
-				os.Exit(1)
-			}
-			if nw != nr {
-				fmt.Printf("Error writing %d bytes from Download!\n", nr)
-				os.Exit(1)
-			}
-		}
-		//fmt.Printf("Finished reading/writing file\n")
 
-	} else {
-		fmt.Printf("Error reading from body: %s\n", err)
-		//log.Stderr(err)
-		os.Exit(1)
 	}
-	//fmt.Println("Written. Closing...")
 
-	//fmt.Println("Closed")
 }
 
 func isDir(name string) bool {
@@ -385,16 +337,6 @@ func main() {
 			}
 			checkDirectory(directory)
 			generate(directory)
-		case "serve":
-			if len(os.Args) > 2 {
-				if os.Args[2] == "dropbox" {
-					DropBoxServe()
-				} else {
-					fmt.Println("Don't understand what you want to serve!. Did you mean 'dropbox'?")
-				}
-			} else {
-				Serve("./")
-			}
 		default:
 			fmt.Printf("Command: %s not understood.\n", command)
 		}
