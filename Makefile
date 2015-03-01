@@ -1,10 +1,15 @@
-.PHONY: build doc fmt lint run test vet create generate serve
+.PHONY: build doc fmt lint run test vet create generate serve deps
 
 default: build
 
 docs:
 	@pandoc -s -w man -o lannister.1 README.md
 	@godoc -html > docs/lannister.html
+
+deps:
+	go get github.com/russross/blackfriday
+	go get golang.org/x/tools/blog/atom
+	go get gopkg.in/yaml.v2
 
 build: vet
 	go build -v
