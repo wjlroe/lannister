@@ -23,13 +23,13 @@ lint:
 fmt:
 	go fmt
 
-test:
+test:   build
 	go test
 
 clean:
 	rm -rf testsite
 
-create: clean build
+create: clean build test
 	./lannister createsite testsite
 
 generate: create
