@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/russross/blackfriday"
 	"golang.org/x/tools/blog/atom"
+	"gopkg.in/yaml.v2"
 	htmpl "html/template"
 	"io"
 	"io/ioutil"
@@ -13,8 +14,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
-	// "gopkg.in/yaml.v2"
+	"time"
 )
 
 // TODO: Add extra URIs in case of failure
@@ -28,8 +30,38 @@ var staticFiles = map[string]string{
 	"http://d3nwyuy0nl342s.cloudfront.net/images/modules/facebox/loading.gif": "images",
 }
 
+type postMeta map[interface{}]interface{}
+
+// Post object
+type Post struct {
+	Filename   string
+	SourcePath string
+	Metadata   postMeta
+}
+
 type page struct {
 	PageContent htmpl.HTML
+}
+
+type destination interface {
+	DestPath() string
+}
+
+// DestPath returns the translated filepath as it should be available in the site
+func (p *Post) DestPath() (dest string, err error) {
+	var dateRe = regexp.MustCompile(`^[\d\-]*`)
+	const datePathFormat = "2006/01/02"
+	const dateFormat = "2006-01-02 15:04"
+	filename := dateRe.ReplaceAllString(filepath.Base(p.Filename), "")
+	dateStr := p.Metadata["date"].(string)
+	var t time.Time
+	t, err = time.Parse(dateFormat, dateStr)
+	if err != nil {
+		fmt.Printf("Error parsing metadata date: %s. Error: %s\n", dateStr, err)
+		return
+	}
+	dest = filepath.Join(t.Format(datePathFormat), filename)
+	return
 }
 
 func download(url string, location string) {
@@ -141,6 +173,7 @@ func createsite(siteDir string) {
 	os.MkdirAll(filepath.Join(siteDir, "pages"), 0755)
 	os.MkdirAll(filepath.Join(siteDir, "site"), 0755)
 	os.MkdirAll(filepath.Join(siteDir, "layouts"), 0755)
+	os.MkdirAll(filepath.Join(siteDir, "posts"), 0755)
 	for uri, path := range staticFiles {
 		localPath := filepath.Join(siteDir, path)
 		fmt.Printf("Downloading URI: %s to path: %s\n", uri, localPath)
@@ -156,7 +189,8 @@ func createsite(siteDir string) {
 	writeFile(layoutDefault, defaultPath)
 	pjaxPath := filepath.Join(siteDir, "layouts", "default-pjax.html")
 	writeFile(layoutPjax, pjaxPath)
-	// TODO: default.rss ?
+	examplePostPath := filepath.Join(siteDir, "posts", "2015-02-27-example-post.md")
+	writeFile(examplePost, examplePostPath)
 }
 
 func copyFile(dst, src string) (int64, error) {
@@ -194,7 +228,106 @@ func copyDirContents(root, srcDir string) {
 	}
 }
 
-func generate(root string) error {
+func getTemplates(root string) (templates map[string]*htmpl.Template, err error) {
+	var templateFiles []string
+	templateFiles, err = filepath.Glob(filepath.Join(root, "layouts", "*.html"))
+	if err != nil {
+		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
+		return
+	}
+	templates = map[string]*htmpl.Template{}
+	for _, t := range templateFiles {
+		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
+	}
+	return
+}
+
+func templatedPage(root string, sourcePath string, destinationPath string) error {
+	templates, err := getTemplates(root)
+	if err != nil {
+		fmt.Printf("Failed to find templates: %s\n", err)
+	}
+
+	inFd, err := os.Open(filepath.Join(root, sourcePath))
+	if err != nil {
+		fmt.Printf("Failed to open file: %s, error: %s\n", sourcePath, err)
+		return err
+	}
+	defer inFd.Close()
+
+	fmt.Printf("\n\nRoot: %s Page: %s Dest page: %s\n", root, sourcePath, destinationPath)
+	doc := markdownParse(inFd)
+	page := &page{PageContent: htmpl.HTML(doc)}
+	pageExt := filepath.Ext(destinationPath)
+	fmt.Printf("Page ext: %s\n", pageExt)
+	pageFilename := strings.Replace(filepath.Base(destinationPath), pageExt, "", -1)
+	for tplFilename, template := range templates {
+		// TODO: This should be pagename-pjax.html or pagename.html - BUG
+		filename := strings.Replace(tplFilename, "default", pageFilename, -1)
+		fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tplFilename, pageFilename, filename)
+		filename = filepath.Join(root, "site", filepath.Dir(destinationPath), filename)
+		os.MkdirAll(filepath.Dir(filename), 0755)
+		fmt.Printf("Going to save templated page: %s as file: %s\n", pageFilename, filename)
+		outFd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			fmt.Printf("Failed to open file: %s for writing, error: %s\n", filename, err)
+			return err
+		}
+		defer outFd.Close()
+		template.Execute(outFd, page)
+		outFd.Sync()
+	}
+	return nil
+}
+
+func templatedPost(root string, p *Post) error {
+	dest, err := p.DestPath()
+	if err != nil {
+		fmt.Printf("Error with DestPath: %s\n", err)
+		return err
+	}
+	return templatedPage(root, p.SourcePath, dest)
+}
+
+func relativePaths(elems ...string) (newPaths []string, err error) {
+	var paths []string
+	paths, err = filepath.Glob(filepath.Join(elems...))
+	var newPath string
+	for _, path := range paths {
+		newPath, err = filepath.Rel(elems[0], path)
+		if err != nil {
+			return
+		}
+		newPaths = append(newPaths, newPath)
+	}
+	return
+}
+
+func postsMetadata(root string, postFiles []string) (posts []*Post, err error) {
+	var data []byte
+	var meta postMeta
+	for _, postFilename := range postFiles {
+		data, err = ioutil.ReadFile(filepath.Join(root, postFilename))
+		if err != nil {
+			fmt.Printf("Failed to open %s. Error: %s\n", postFilename, err)
+			return
+		}
+
+		err = yaml.Unmarshal(data, &meta)
+		if err != nil {
+			fmt.Printf("Failed to unmarshal yaml from %s.Error: %s\n", postFilename, err)
+		}
+
+		p := new(Post)
+		p.Metadata = meta
+		p.Filename = filepath.Base(postFilename)
+		p.SourcePath = postFilename
+		posts = append(posts, p)
+	}
+	return
+}
+
+func generate(root string) (err error) {
 	// list the files to be templated
 	// process them - markdown
 	// run each through each layout file (TODO: make configurable)
@@ -204,54 +337,32 @@ func generate(root string) error {
 	copyDirContents(root, "images")
 	copyDirContents(root, "javascript")
 
-	var pageFiles []string
-	var err error
-	pageFiles, err = filepath.Glob(filepath.Join(root, "pages", "*.md"))
+	var pageFiles, postFiles []string
+	pageFiles, err = relativePaths(root, "pages", "*.md")
+	if err != err {
+		fmt.Printf("Failed to find pages. Error: %s\n", err)
+		return
+	}
+	postFiles, err = relativePaths(root, "posts", "*.md")
 	if err != nil {
-		fmt.Printf("Failed to find any .md files in pages subdir. Error: %s\n", err)
-		return err
+		fmt.Printf("Failed to find any .md files in posts subdir. Error: %s\n", err)
+		return
 	}
-
-	var templateFiles []string
-	templateFiles, err = filepath.Glob(filepath.Join(root, "layouts", "*.html"))
+	var posts []*Post
+	posts, err = postsMetadata(root, postFiles)
 	if err != nil {
-		fmt.Printf("Failed to find any applicable layout files. Error: %s\n", err)
-		return err
+		fmt.Printf("Failed to get post metadata. Error: %s\n", err)
 	}
-	templates := map[string]*htmpl.Template{}
-	for _, t := range templateFiles {
-		templates[filepath.Base(t)] = htmpl.Must(htmpl.ParseFiles(t))
-	}
+	fmt.Printf("p: %v\n", posts)
 
 	for _, pageFilepath := range pageFiles {
-		inFd, err := os.Open(pageFilepath)
-		if err != nil {
-			fmt.Printf("Failed to open file: %s, error: %s\n", pageFilepath, err)
-			return err
-		}
-		defer inFd.Close()
-		doc := markdownParse(inFd)
-		page := &page{PageContent: htmpl.HTML(doc)}
-		pageFilename := filepath.Base(pageFilepath)
-		pageExt := filepath.Ext(pageFilename)
-		fmt.Printf("Page ext: %s\n", pageExt)
-		pageFilename = strings.Replace(pageFilename, pageExt, "", -1)
-		for tplFilename, template := range templates {
-			// TODO: This should be pagename-pjax.html or pagename.html - BUG
-			filename := strings.Replace(tplFilename, "default", pageFilename, -1)
-			fmt.Printf("tpl_filename: %s, page_filename: %s, Output page filename: %s\n", tplFilename, pageFilename, filename)
-			filepath := filepath.Join(root, "site", filename)
-			fmt.Printf("Going to save templated page: %s as file: %s\n", pageFilename, filepath)
-			outFd, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-			if err != nil {
-				fmt.Printf("Failed to open file: %s for writing, error: %s\n", filepath, err)
-				return err
-			}
-			defer outFd.Close()
-			template.Execute(outFd, page)
-			outFd.Sync()
-		}
+		templatedPage(root, pageFilepath, filepath.Base(pageFilepath))
 	}
+
+	for _, p := range posts {
+		templatedPost(root, p)
+	}
+
 	createAtomFeed(filepath.Join(root, "site", "index.rss"))
 	return nil
 }
@@ -337,6 +448,21 @@ This is the *about* page.
 
 const indexPage = `## Index
 This is the index page.
+`
+
+const examplePost = `---
+layout: post
+title: Example post
+date: 2015-02-27 17:31
+comments: true
+categories: [tmux, cli, tips]
+---
+
+## Example blog post
+
+Hi all this is my new blog isn't it the best no really.
+
+It's got smart quotes and everything.
 `
 
 const layoutPjax = `
