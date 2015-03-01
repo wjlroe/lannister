@@ -286,10 +286,6 @@ func postsMetadata(root string, postFiles []string) (posts []*Post, err error) {
 }
 
 func generate(root string) (err error) {
-	// list the files to be templated
-	// process them - markdown
-	// run each through each layout file (TODO: make configurable)
-	// save each output file in the site directory
 	os.MkdirAll(filepath.Join(root, "site", "images"), 0755)
 	os.MkdirAll(filepath.Join(root, "site", "javascript"), 0755)
 	copyDirContents(root, "images")
@@ -334,7 +330,6 @@ func getCWD() (directory string) {
 }
 
 func main() {
-	// Get the command
 	if len(os.Args) > 1 {
 		command := os.Args[1]
 		switch command {
