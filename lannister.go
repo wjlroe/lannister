@@ -19,10 +19,6 @@ import (
 	"time"
 )
 
-// TODO: Add extra URIs in case of failure
-//http://code.jquery.com/jquery-1.5.2.min.js
-// TODO: Make generic func url -> location downloader
-
 type postMeta map[interface{}]interface{}
 
 // Post object
