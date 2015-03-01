@@ -251,7 +251,6 @@ func templatedPage(root string, sourcePath string, destinationPath string) error
 	doc := markdownParse(inFd)
 	page := &page{PageContent: htmpl.HTML(doc)}
 	pageExt := filepath.Ext(destinationPath)
-	fmt.Printf("Page ext: %s\n", pageExt)
 	pageFilename := strings.Replace(filepath.Base(destinationPath), pageExt, "", -1)
 	for tplFilename, template := range templates {
 		// TODO: This should be pagename-pjax.html or pagename.html - BUG
