@@ -1,6 +1,6 @@
 # Lannister
 
-Lannister is a static website generator. It is a work in progress.
+Lannister was a static website generator in Go. It is abandoned.
 
 ## Features:
 
